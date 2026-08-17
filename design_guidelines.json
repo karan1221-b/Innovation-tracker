@@ -1,0 +1,169 @@
+{
+  "app_name": "FixIt",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A highly readable, trustworthy, and clean interface that minimizes friction and uses a deep teal accent to instill reliability.",
+  "color": {
+    "surface": "#FFFFFF",
+    "onSurface": "#111827",
+    "surfaceSecondary": "#F9FAFB",
+    "onSurfaceSecondary": "#374151",
+    "surfaceTertiary": "#F3F4F6",
+    "onSurfaceTertiary": "#4B5563",
+    "surfaceInverse": "#1F2937",
+    "onSurfaceInverse": "#F9FAFB",
+    "brand": "#0D9488",
+    "brandPrimary": "#0F766E",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#14B8A6",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#CCFBF1",
+    "onBrandTertiary": "#115E59",
+    "success": "#10B981",
+    "onSuccess": "#FFFFFF",
+    "warning": "#F59E0B",
+    "onWarning": "#FFFFFF",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "info": "#3B82F6",
+    "onInfo": "#FFFFFF",
+    "border": "#E5E7EB",
+    "borderStrong": "#D1D5DB",
+    "divider": "#F3F4F6"
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous vertical breathing room. Cards never flush to screen edge (use lg padding). Empty space should feel intentional.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use glass on the bottom tab bar",
+      "Use glass on sticky headers over scrollable feeds",
+      "Use glass on bottom-sheet headers and drag handles"
+    ],
+    "dont's": [
+      "Do not use glass on form inputs or dense lists",
+      "Do not stack more than 2 blur surfaces per screen"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "haptics": {
+    "button_press": "impactLight",
+    "voice_record_start": "impactMedium",
+    "voice_record_stop": "impactHeavy",
+    "tab_switch": "selection",
+    "pull_to_refresh": "impactLight",
+    "emergency_sos_toggle": "notificationWarning"
+  },
+  "screens": [
+    {
+      "name": "CustomerHome",
+      "purpose": "Focus the user entirely on describing their problem rather than browsing service catalogs.",
+      "states": {
+        "loading": "Centered spinner with a subtle brand tint.",
+        "empty": "N/A - Home screen is always populated with the input and fallback categories.",
+        "error": "Failed to load categories: 'Something went wrong.' + Retry button."
+      },
+      "layout": "Header: Location selector with a subtle dropdown chevron. Below header: A large, prominent 'What's Wrong?' card (surfaceSecondary, shadow 1, md radius). Inside this card: A multi-line text input field, flanked by a primary FAB-style Voice record button (brandPrimary) and smaller icon buttons for Photo/Video uploads. Use dynamic waveforms when voice is active. Below the input card: 'Or select a quick category', displaying a multi-column grid (wrap with space-between) of tinted icon containers (brandTertiary with brandPrimary icons) for Plumbing, Electrical, Cleaning, etc. Bottom safe area: Glass tab bar."
+    },
+    {
+      "name": "ProListings",
+      "purpose": "Display AI classification results and matched professionals nearby.",
+      "states": {
+        "loading": "Skeleton rows resembling professional cards.",
+        "empty": "Illustration of an empty box + 'No professionals available right now' + 'Try expanding search' primary CTA.",
+        "error": "Failed to load matches: 'Unable to fetch professionals' + Retry button."
+      },
+      "layout": "Sticky Header: Glass background showing the AI-classified problem (e.g., 'Plumbing - Pipe Leak') with an 'Edit' text link. Scrollable body: Vertical list of Professional Cards. Card Layout: surface background, md radius, border stroke. Top half of card: Avatar (left), Name & Verification Badge (right), Rating & Jobs completed (subtext). Bottom half: ETA/Distance, Price Range, and a primary 'Book' button aligned right. The screen requires safe-area padding at the bottom above the tab bar."
+    },
+    {
+      "name": "BookingTracker",
+      "purpose": "Provide real-time visibility into the status of an active job.",
+      "states": {
+        "loading": "Centered spinner.",
+        "empty": "Illustration + 'No active bookings' + 'Go Home' CTA.",
+        "error": "Failed to load tracking data + Retry button."
+      },
+      "layout": "Top half: A map preview (static image or map view) showing the pro's location. Bottom half (bottom sheet or overlaid card): Job details (Pro Name, Problem description). A vertical multi-step timeline (Assigned -> On the way -> In progress -> Complete) using brandPrimary for completed steps and surfaceTertiary for upcoming steps. Sticky Bottom: Action bar anchored to the bottom (above safe area) with 'Contact Pro' (surfaceSecondary button) and 'Emergency Help' (error button) pinned over the scrolling content."
+    },
+    {
+      "name": "ProfessionalDashboard",
+      "purpose": "Give service providers a glanceable view of their daily earnings and incoming requests.",
+      "states": {
+        "loading": "Skeleton loaders for earnings and list items.",
+        "empty": "Illustration of empty box + 'No jobs assigned yet' + Keep your status Online.",
+        "error": "Failed to load dashboard + Retry button."
+      },
+      "layout": "Header: Large greeting and a prominent 'Online / Offline' toggle switch. Section 1 (Cards): Two side-by-side metric cards (width: 48%, space-between) showing 'Today's Earnings' and 'Jobs Completed' using large typography. Section 2: 'New Requests' list. Each list item uses swipe-to-update gestures (swipe right to Accept, swipe left to Decline). Each row shows Problem Description, Address, and Urgency tag (if emergency, tag is solid error color). Bottom tab bar for Pros (Home, Schedule, Messages, Profile)."
+    }
+  ],
+  "images": {
+    "hero_fallback": {
+      "url": "https://images.unsplash.com/photo-1676311396794-f14881e9daaa?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHxob21lJTIwc2VydmljZSUyMHJlcGFpcnxlbnwwfHx8fDE3ODY5NTIyMDh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "home repair tools on a table"
+    },
+    "empty_box": {
+      "url": "https://images.pexels.com/photos/7957727/pexels-photo-7957727.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "empty cardboard boxes"
+    },
+    "pro_avatar_1": {
+      "url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODY5NTIyMDh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "professional man portrait"
+    },
+    "pro_avatar_2": {
+      "url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODY5NTIyMDh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "professional woman portrait"
+    },
+    "category_plumbing_fallback": {
+      "url": "https://images.pexels.com/photos/5414384/pexels-photo-5414384.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "wrenches and plumbing tools"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Design Identity: Strictly adhere to the '1 iOS-Native Clean' personality. Use Plus Jakarta Sans (font weight capped at 500 max). Let the font sizes carry the hierarchy.",
+    "Colors: Override the strict blue ban as the problem statement EXPLICITLY asks for a clean aesthetic with a blue/teal accent. Use the #0D9488 (Teal) hex family provided in the JSON. Never use purple or pink.",
+    "AI Problem Input (Customer Home): This is the core MVP feature. Ensure the 'What's Wrong' input feels like a multimodal prompt (like ChatGPT) rather than a simple search bar. Include UI for voice waveform states.",
+    "Layout Rules: Use single-column cards or 2-column grids with flexWrap and space-between. Avoid orphan cards taking up 48% width with the right side empty.",
+    "Sticky Actions: For any screen with scrolling content and a primary action (e.g., Book Professional, Contact Pro), the CTA must be fixed at the bottom above the safe area, wrapped in a glass container or solid surface fading up.",
+    "Glassmorphism: Use expo-blur on the bottom tab bar, bottom sheet handles, and sticky headers as per the guidelines.",
+    "Text on Image: If any text is laid over the hero image or map previews, MUST use a vertical gradient scrim (transparent to >=70% surfaceInverse) to guarantee contrast.",
+    "Haptics: Wire up the haptics mapped in the JSON, especially for the voice recording and emergency sos toggles."
+  ]
+}

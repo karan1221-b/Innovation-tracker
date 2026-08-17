@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "FixIt",
+    "slug": "frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "frontend",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emergent.fixitservicematch.hg2d1j",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Attach photos of your problem to get help faster",
+        "NSCameraUsageDescription": "Take a photo of the issue for the professional"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0D9488"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.emergent.fixitservicematch.hg2d1j",
+      "permissions": ["READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-image.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
