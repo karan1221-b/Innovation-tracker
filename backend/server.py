@@ -221,6 +221,34 @@ async def update_me(data: ProfileUpdate, user: dict = Depends(current_user)):
     return public_user(u)
 
 
+@api.delete("/auth/me")
+async def delete_me(user: dict = Depends(current_user)):
+    """Permanently delete the signed-in account and associated personal data."""
+    uid = str(user["_id"])
+    if user["role"] == "professional":
+        pro = await db.professionals.find_one({"user_id": uid})
+        if pro:
+            pid = str(pro["_id"])
+            booking_ids = [str(b["_id"]) for b in await db.bookings.find({"professional_id": pid}, {"_id": 1}).to_list(1000)]
+            if booking_ids:
+                await db.messages.delete_many({"booking_id": {"$in": booking_ids}})
+            await db.bookings.delete_many({"professional_id": pid})
+            await db.reviews.delete_many({"professional_id": pid})
+            await db.messages.delete_many({"sender_id": uid})
+            await db.professionals.delete_one({"_id": pro["_id"]})
+    else:
+        booking_ids = [str(b["_id"]) for b in await db.bookings.find({"customer_id": uid}, {"_id": 1}).to_list(1000)]
+        if booking_ids:
+            await db.messages.delete_many({"booking_id": {"$in": booking_ids}})
+        await db.bookings.delete_many({"customer_id": uid})
+        await db.reviews.delete_many({"customer_id": uid})
+        await db.messages.delete_many({"sender_id": uid})
+    await db.uploads.delete_many({"owner_id": uid})
+    await db.notifications.delete_many({"user_id": uid})
+    await db.users.delete_one({"_id": user["_id"]})
+    return {"ok": True, "message": "Your account and data have been deleted."}
+
+
 # ----------------------- Categories & AI -----------------------
 @api.get("/categories")
 async def get_categories():

@@ -62,9 +62,9 @@ async def seed():
     for c in CATEGORIES:
         await db.categories.update_one({"slug": c["slug"]}, {"$set": c}, upsert=True)
 
-    # Admin account
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@fixit.com").lower()
-    admin_pw = os.environ.get("ADMIN_PASSWORD", "Admin@12345")
+    # Admin account (credentials sourced from environment, never hardcoded)
+    admin_email = os.environ["ADMIN_EMAIL"].lower()
+    admin_pw = os.environ["ADMIN_PASSWORD"]
     await db.users.update_one(
         {"email": admin_email},
         {"$setOnInsert": {

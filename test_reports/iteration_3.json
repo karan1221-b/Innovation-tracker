@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 3 REGRESSION verification after deployment-readiness fixes (stray JSX cleanup on (pro)/profile.tsx, added pro delete confirmation bottom sheet, admin creds via env, quoted METRO_CACHE_ROOT, storage base from INTEGRATION_PROXY_URL env). Backend: 38/38 pytest tests PASSED (100%) — includes the previously-flaky TestNotifications which now passes when run with -n 0. Admin login (admin@fixit.com/Admin@12345) works from env. Full booking lifecycle create → confirm → on_the_way → arrived → work_started → work_completed → quote → pay(cash) → review verified. AI classify, categories, professionals-by-category, upload+download (INTEGRATION_PROXY_URL resolves), and DELETE /api/auth/me cascade (customer + professional) all pass. Frontend: (pro)/profile renders WITHOUT crash after JSX cleanup. Business-details form, Save changes, Log out, and pro-delete-account-button all render. Tapping pro-delete-account-button opens a bottom sheet showing pro-confirm-delete-button + pro-cancel-delete-button; Cancel dismisses (confirm bbox y moves 661→981, off-screen); Confirm deletes account, redirects to /login, relogin returns 401, and the pro is removed from admin verified list. Customer delete flow (delete-account-button → confirm-delete-button → /login → 401 relogin) also verified. No blocking bugs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/notifications", "issue": "Pre-existing pytest-xdist worker-scoping artifact — passes with -n 0, fails with -n 2 loadscope because the session-scoped `customer` fixture is per-worker so the notifications test lands on a customer with no bookings. Not a real backend bug. Suggestion: use `--dist=loadfile` or scope the customer fixture appropriately."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props (RN Web deprecation)", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' emitted across screens. Reference: /app/frontend/src/theme.ts (shadow helper) used in (customer)/profile.tsx and others."},
+      {"component": "props.pointerEvents (RN Web deprecation)", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents.' Emitted from a child component in customer screens."},
+      {"component": "@gorhom/bottom-sheet (React 19 ref)", "issue": "Console error: 'Accessing element.ref was removed in React 19. ref is now a regular prop.' — originates from a library (likely @gorhom/bottom-sheet or Reanimated). Non-blocking. Track for library upgrade."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_fixit_backend.py",
+    "/app/backend/tests/test_account_deletion.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Migrate `shadow*` style props to `boxShadow` and `props.pointerEvents` to `style.pointerEvents` across the theme helper and any custom components to silence RN Web deprecation warnings.",
+    "(Optional) Upgrade @gorhom/bottom-sheet to a React-19-compatible release once available to remove the element.ref console error.",
+    "(Optional) Adjust pytest config to `--dist=loadfile` so TestNotifications shares the same worker (and customer fixture) as the booking lifecycle that generates the notifications — the endpoint itself is correct."
+  ],
+  "critical_code_review_comments": [
+    "(pro)/profile.tsx is clean — no stray JSX close tokens. The delete confirmation bottom sheet mirrors the customer implementation exactly (index=-1, snapPoints=[320], enablePanDownToClose, BottomSheetBackdrop, testIDs pro-confirm-delete-button / pro-cancel-delete-button). Good.",
+    "server.py: admin creds now read from ADMIN_EMAIL/ADMIN_PASSWORD env vars (backend/.env). Admin login regression verified end-to-end.",
+    "backend/.env: INTEGRATION_PROXY_URL set; /api/upload → /api/files/{path} round-trip works.",
+    "frontend/.env: METRO_CACHE_ROOT quoted; Expo bundler starts cleanly (no restart-loop artifacts in supervisor logs)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (38/38 with -n 0)", "frontend": "100% for pro profile render + delete confirm/cancel flow + customer delete flow"},
+  "seed_data_creation": "Per-test throwaway accounts prefixed TEST_pro_ui*_, TEST_cust_ui_*, TEST_del_*. Each is self-deleted by the flow under test. Shared admin@fixit.com and cust1@test.com were NOT touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All deployment-readiness fixes verified. If frontend pro delete flow is retested via Playwright, do NOT rely on `is_visible` to assert sheet dismissal — @gorhom/bottom-sheet keeps children in the DOM. Instead, read `bounding_box()` y-coordinate: the confirm button moves off-screen (y > viewport height) when the sheet is closed. Also wait ~2s after cancel/expand for the slide animation to settle. Run backend tests with `-n 0` for a fully clean 38/38 pass; the -n 2 loadscope config produces a false-positive notifications failure that has been documented across iterations.",
+  "rca_of_issue": "N/A — no blocking issues found. The initial Playwright run reported a false positive on the pro cancel button and relogin (RELOGIN 200) because (a) `is_visible` returns True for @gorhom/bottom-sheet children even after close animation, and (b) after that misleading assertion the test tried to re-open the sheet while it was still animating, causing the follow-up confirm click to miss its target and hit the bottom tab bar (URL went to /messages). Retesting with `bounding_box()` and adequate animation waits confirmed the flow is correct: sheet expands on tap, dismisses on Cancel (bbox y=661→981), and confirms deletion end-to-end with 401 on relogin and pro removed from admin list."
+}

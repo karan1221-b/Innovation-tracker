@@ -16,6 +16,7 @@ type AuthState = {
   login: (email: string, password: string) => Promise<User>;
   register: (payload: { name: string; email: string; password: string; phone?: string; role: string }) => Promise<User>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refresh: () => Promise<void>;
   setUser: (u: User) => void;
 };
@@ -73,6 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
   };
 
+  const deleteAccount = async () => {
+    await apiFetch("/auth/me", { method: "DELETE" });
+    await clearToken();
+    setUserState(null);
+  };
+
   const refresh = async () => {
     try {
       const me = await apiFetch<User>("/auth/me");
@@ -81,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refresh, setUser: setUserState }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, deleteAccount, refresh, setUser: setUserState }}>
       {children}
     </AuthContext.Provider>
   );

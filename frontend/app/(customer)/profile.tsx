@@ -10,11 +10,12 @@ import { AppButton, useToast } from "@/src/ui";
 import { colors, spacing, font, radius, shadow } from "@/src/theme";
 
 export default function Profile() {
-  const { user, logout, setUser } = useAuth();
+  const { user, logout, deleteAccount, setUser } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const editSheet = useRef<BottomSheet>(null);
+  const deleteSheet = useRef<BottomSheet>(null);
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [busy, setBusy] = useState(false);
@@ -27,6 +28,15 @@ export default function Profile() {
       editSheet.current?.close();
       toast("Profile updated", "success");
     } catch (e: any) { toast(e.message, "error"); } finally { setBusy(false); }
+  };
+
+  const removeAccount = async () => {
+    setBusy(true);
+    try {
+      await deleteAccount();
+      toast("Account deleted", "info");
+      router.replace("/login");
+    } catch (e: any) { toast(e.message, "error"); setBusy(false); }
   };
 
   const MENU = [
@@ -62,6 +72,10 @@ export default function Profile() {
 
         <View style={{ paddingHorizontal: spacing.xl, marginTop: spacing.xl }}>
           <AppButton title="Log out" testID="logout-button" variant="outline" icon="log-out-outline" onPress={async () => { await logout(); router.replace("/login"); }} />
+          <Pressable testID="delete-account-button" style={styles.deleteRow} onPress={() => deleteSheet.current?.expand()}>
+            <Ionicons name="trash-outline" size={16} color={colors.error} />
+            <Text style={styles.deleteText}>Delete my account</Text>
+          </Pressable>
         </View>
       </ScrollView>
 
@@ -73,6 +87,15 @@ export default function Profile() {
           <Text style={styles.fieldLabel}>Phone</Text>
           <BottomSheetTextInput testID="edit-phone-input" value={phone} onChangeText={setPhone} style={styles.input} placeholder="+91…" keyboardType="phone-pad" placeholderTextColor={colors.muted} />
           <AppButton title="Save" testID="save-profile-button" onPress={save} loading={busy} style={{ marginTop: spacing.lg }} />
+        </BottomSheetView>
+      </BottomSheet>
+
+      <BottomSheet ref={deleteSheet} index={-1} snapPoints={[320]} enablePanDownToClose backdropComponent={(p) => <BottomSheetBackdrop {...p} appearsOnIndex={0} disappearsOnIndex={-1} />}>
+        <BottomSheetView style={{ padding: spacing.xl }}>
+          <Text style={styles.sheetTitle}>Delete account?</Text>
+          <Text style={styles.deleteWarn}>This permanently removes your account, bookings, messages and reviews. This cannot be undone.</Text>
+          <AppButton title="Delete permanently" testID="confirm-delete-button" variant="danger" onPress={removeAccount} loading={busy} style={{ marginTop: spacing.lg }} />
+          <AppButton title="Cancel" testID="cancel-delete-button" variant="ghost" onPress={() => deleteSheet.current?.close()} />
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -95,4 +118,7 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: font.xl, fontWeight: "700", color: colors.onSurface, marginBottom: spacing.lg },
   fieldLabel: { fontSize: font.base, fontWeight: "500", color: colors.onSurfaceSecondary, marginBottom: spacing.sm },
   input: { height: 52, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, fontSize: font.lg, color: colors.onSurface, marginBottom: spacing.md },
+  deleteRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: spacing.lg, paddingVertical: spacing.md },
+  deleteText: { color: colors.error, fontWeight: "600", fontSize: font.base },
+  deleteWarn: { fontSize: font.base, color: colors.onSurfaceSecondary, lineHeight: 21, marginTop: spacing.sm },
 });

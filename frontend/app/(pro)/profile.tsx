@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View, Pressable, ScrollView } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { useAuth } from "@/src/AuthContext";
 import { apiFetch } from "@/src/api";
 import { AppButton, Input, Loading, VerifiedBadge, useToast } from "@/src/ui";
@@ -12,7 +13,7 @@ import { colors, spacing, font, radius, shadow } from "@/src/theme";
 const CATS = ["plumbing", "electrical", "ac_cooling", "appliance_repair", "cleaning", "carpentry", "painting", "pest_control", "furniture_assembly", "installation", "other"];
 
 export default function ProProfile() {
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
@@ -20,6 +21,7 @@ export default function ProProfile() {
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const deleteSheet = useRef<BottomSheet>(null);
 
   const load = useCallback(async () => {
     try {
@@ -95,7 +97,22 @@ export default function ProProfile() {
 
         <AppButton title="Save changes" testID="pro-save-button" onPress={save} loading={busy} />
         <AppButton title="Log out" testID="pro-logout-button" variant="outline" icon="log-out-outline" onPress={async () => { await logout(); router.replace("/login"); }} style={{ marginTop: spacing.md }} />
+        <Pressable testID="pro-delete-account-button" style={styles.deleteRow} onPress={() => deleteSheet.current?.expand()}>
+          <Ionicons name="trash-outline" size={16} color={colors.error} />
+          <Text style={styles.deleteText}>Delete my account</Text>
+        </Pressable>
       </KeyboardAwareScrollView>
+
+      <BottomSheet ref={deleteSheet} index={-1} snapPoints={[320]} enablePanDownToClose backdropComponent={(p) => <BottomSheetBackdrop {...p} appearsOnIndex={0} disappearsOnIndex={-1} />}>
+        <BottomSheetView style={{ padding: spacing.xl }}>
+          <Text style={styles.deleteTitle}>Delete account?</Text>
+          <Text style={styles.deleteWarn}>This permanently removes your professional profile, jobs, messages and reviews. This cannot be undone.</Text>
+          <AppButton title="Delete permanently" testID="pro-confirm-delete-button" variant="danger" loading={busy}
+            onPress={async () => { setBusy(true); try { await deleteAccount(); toast("Account deleted", "info"); router.replace("/login"); } catch (e: any) { toast(e.message, "error"); setBusy(false); } }}
+            style={{ marginTop: spacing.lg }} />
+          <AppButton title="Cancel" testID="pro-cancel-delete-button" variant="ghost" onPress={() => deleteSheet.current?.close()} />
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }
@@ -116,4 +133,8 @@ const styles = StyleSheet.create({
   chipText: { fontSize: font.base, color: colors.onSurfaceTertiary, fontWeight: "500", textTransform: "capitalize" },
   chipTextActive: { color: colors.brandPrimary, fontWeight: "700" },
   row2: { flexDirection: "row", gap: spacing.md },
+  deleteRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: spacing.lg, paddingVertical: spacing.md },
+  deleteText: { color: colors.error, fontWeight: "600", fontSize: font.base },
+  deleteTitle: { fontSize: font.xl, fontWeight: "700", color: colors.onSurface },
+  deleteWarn: { fontSize: font.base, color: colors.onSurfaceSecondary, lineHeight: 21, marginTop: spacing.sm },
 });

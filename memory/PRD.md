@@ -48,6 +48,7 @@ Complete → Pay → Review. Three roles: Customer, Professional, Admin. Market:
 - [x] Professional dashboard: availability toggle, metrics, accept/decline, advance status, set final price; jobs list; profile editor.
 - [x] Admin dashboard (mobile): overview stats, commission editor, verify/reject/suspend pros, suspend/reactivate users.
 - [x] Testing: backend 33/34 pytest pass; frontend flows verified.
+- [x] Deployment readiness (health check passed): in-app account deletion (customer + professional, with confirmation) — Apple/Play requirement; admin credentials + storage/proxy URL moved to env; env file format fixed. Backend 38/38 regression pass.
 
 ## Backlog (prioritized)
 ### P0 (next)

@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 2 verification of NEW deployment-readiness feature: in-app ACCOUNT DELETION for both customer and professional roles (Apple/Play store requirement), plus regression of all iteration_1 flows. Backend: 37/38 pytest tests passed (97%). All 4 NEW DELETE /api/auth/me tests passed — customer deletion cascades (bookings/messages/notifications/reviews removed, token 401, login 401), professional deletion also removes the professional profile from admin verified list and invalidates the token, and unauthenticated DELETE returns 401/403. Upload+download round trip still works after INTEGRATION_PROXY_URL pinning. Frontend: verified end-to-end from the mobile web preview — customer profile shows testID=delete-account-button which opens the confirmation bottom sheet (confirm-delete-button + cancel-delete-button); confirming redirects to /login and login with the deleted credentials is rejected. Professional profile shows pro-delete-account-button, tapping it deletes and returns to /login, and the pro no longer appears in admin verified list. The single failing backend test is the SAME known pytest-xdist parallel-worker scoping artifact from iteration_1 (TestNotifications) — NOT a regression, NOT introduced by the new change.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/notifications", "issue": "Pre-existing pytest-xdist scoping artifact: session-scoped `customer` fixture is per-worker, so the notifications test on gw1 runs against a customer with no bookings and therefore no notifications. Endpoint itself is correct; verified via real UI flow. Fix suggestion: run this file with `-p no:xdist` or use `--dist=loadfile` so booking events and notification assertions run on the same worker."},
+      {"endpoint": "DELETE /api/auth/me (professional)", "issue": "Only deletes messages where the pro is sender_id — messages received by the pro remain (they still have booking_id pointing to a now-deleted booking). Low impact since bookings for that pro are deleted. Consider `delete_many({'booking_id': {'$in': [...]}})` for a cleaner cascade."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "(pro)/profile", "issues": ["Professional delete flow has NO confirmation step — tapping pro-delete-account-button instantly deletes the account. Customer flow correctly uses a confirm bottom sheet. For app-store compliance and to prevent accidental taps, add the same confirmation sheet (confirm-delete-button / cancel-delete-button) to the pro screen."]}
+    ],
+    "react_native_issues": [
+      {"component": "styles across screens (still present)", "issue": "Console warning: 'shadow*' style props are deprecated. Use 'boxShadow'. Multiple screens still emit this warning (customer profile, home). Migrate shadowColor/shadowOffset/shadowOpacity/shadowRadius to `boxShadow` for RN Web 0.19+. Reference: /app/frontend/app/(customer)/profile.tsx and /app/frontend/src/theme.ts (shadow helper)."},
+      {"component": "props.pointerEvents (still present)", "issue": "Console warning: props.pointerEvents is deprecated. Use style.pointerEvents. Still emitted from at least one component in customer screens."},
+      {"component": "React 19 element.ref", "issue": "Console warning: 'Accessing element.ref was removed in React 19. ref is now a regular prop.' — likely from @gorhom/bottom-sheet or a similar library. Non-blocking, but track a library upgrade path."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_account_deletion.py",
+    "/app/backend/tests/test_fixit_backend.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional / recommended) Add a confirmation bottom sheet to (pro)/profile.tsx pro-delete-account-button matching the customer flow (danger button + cancel). This is an app-store best practice — don't destroy account on a single tap.",
+    "(Optional) Also remove messages where the pro is the recipient (booking_id-based cascade) during pro account deletion in server.py `delete_me`.",
+    "(Pre-existing) Migrate `shadow*` style props to `boxShadow` and `props.pointerEvents` to `style.pointerEvents` across affected screens/components to silence RN Web deprecation warnings.",
+    "(Pre-existing, iteration_1) Make pro-card in matches.tsx tappable on the whole card (not just the Book button)."
+  ],
+  "critical_code_review_comments": [
+    "server.py grew to 750 lines. Threshold breached — consider splitting bookings/admin/messages into separate routers.",
+    "delete_me() in server.py cleanly cascades customer data (bookings/reviews/messages/notifications/uploads). For professionals, it removes bookings/reviews/professional profile but only removes messages where the pro was sender — see minor issue above.",
+    "AuthContext.deleteAccount() calls DELETE /auth/me then clears storage and setUser(null) — token cannot be reused after deletion because the backend user record is gone (verified 401 on subsequent /auth/me).",
+    "Customer profile uses the correct testIDs (delete-account-button, confirm-delete-button, cancel-delete-button). Pro profile has pro-delete-account-button but no confirmation controls — matches the review-request spec but reduces safety.",
+    "Env: INTEGRATION_PROXY_URL is pinned in /app/backend/.env; /api/upload + /api/files round trip continues to work."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_account_deletion.py (new — 4 tests for DELETE /api/auth/me)"
+  ],
+  "success_rate": {"backend": "97% (37/38, same known xdist artifact as iteration_1; 4/4 NEW deletion tests passed)", "frontend": "100% on the new delete flow (customer confirm sheet + pro one-tap)"},
+  "seed_data_creation": "Throwaway customer + professional accounts created per-test with TEST_del_* prefix; each one is deleted at the end of its own test, so no data pollution from this iteration. Did NOT touch shared cust1@test.com or admin@fixit.com.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "NEW test file /app/backend/tests/test_account_deletion.py covers customer+pro DELETE /api/auth/me, cascade cleanup, token invalidation, and login rejection. Frontend flow verified via Playwright: login → /(customer)/profile → delete-account-button → confirm-delete-button → /login (401 on relogin). Pro flow: login → /(pro)/profile → pro-delete-account-button → /login. Pro delete has NO confirmation sheet by design (per review request spec) — flagged as a UX concern. Iteration_1 known non-bugs still apply: voice input is a coming-soon toast, and online card/UPI payment is gateway-pending (cash works). Same pytest-xdist notifications test artifact persists — not a regression.",
+  "rca_of_issue": "N/A — no blocking issues. The one failing backend test (TestNotifications) was already documented in iteration_1 as a pytest-xdist worker-scoping artifact (session-scoped fixtures are per-worker, so the customer used by the notifications test on gw1 has no bookings, hence zero notifications). Notification write path itself is verified indirectly by TestMessages and by successful booking-status transitions in TestBookingLifecycle."
+}
