@@ -243,6 +243,16 @@ async def delete_me(user: dict = Depends(current_user)):
         await db.bookings.delete_many({"customer_id": uid})
         await db.reviews.delete_many({"customer_id": uid})
         await db.messages.delete_many({"sender_id": uid})
+    # Remove uploaded objects as well as their database records. Storage cleanup is
+    # best-effort so an already-missing object does not block account deletion.
+    uploads = await db.uploads.find({"owner_id": uid}, {"storage_path": 1}).to_list(5000)
+    for upload in uploads:
+        path = upload.get("storage_path")
+        if path:
+            try:
+                await run_in_threadpool(storage.delete_object, path)
+            except Exception:
+                logger.exception("failed to delete stored upload during account deletion: %s", path)
     await db.uploads.delete_many({"owner_id": uid})
     await db.notifications.delete_many({"user_id": uid})
     await db.users.delete_one({"_id": user["_id"]})
@@ -370,6 +380,7 @@ async def get_booking(bid: str, user: dict = Depends(current_user)):
     b = await db.bookings.find_one({"_id": oid(bid)})
     if not b:
         raise HTTPException(status_code=404, detail="Booking not found.")
+    await _assert_booking_party(b, user)
     return await enrich_booking(b)
 
 
@@ -638,15 +649,40 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(current
 
 
 @api.get("/files/{path:path}")
-async def get_file(path: str):
+async def get_file(path: str, user: dict = Depends(current_user)):
+    """Serve an uploaded file only to its owner or a participant of a related booking/message."""
     rec = await db.uploads.find_one({"storage_path": path})
     if not rec:
         raise HTTPException(status_code=404, detail="File not found.")
+    uid = str(user["_id"])
+    allowed = rec.get("owner_id") == uid or user.get("role") == "admin"
+    if not allowed:
+        related_booking = await db.bookings.find_one({
+            "media_urls": path,
+            "$or": [{"customer_id": uid}]
+        }, {"_id": 1})
+        if not related_booking and user.get("role") == "professional":
+            pro = await db.professionals.find_one({"user_id": uid}, {"_id": 1})
+            if pro:
+                related_booking = await db.bookings.find_one({"media_urls": path, "professional_id": str(pro["_id"])}, {"_id": 1})
+        if not related_booking:
+            # Messages can contain an uploaded media URL/path. Only conversation parties may access it.
+            msg = await db.messages.find_one({"media_url": path}, {"booking_id": 1})
+            if msg:
+                mb = await db.bookings.find_one({"_id": oid(msg["booking_id"])}, {"customer_id": 1, "professional_id": 1})
+                if mb:
+                    if mb.get("customer_id") == uid:
+                        allowed = True
+                    elif user.get("role") == "professional":
+                        pro = await db.professionals.find_one({"user_id": uid}, {"_id": 1})
+                        allowed = bool(pro and mb.get("professional_id") == str(pro["_id"]))
+            if not allowed:
+                raise HTTPException(status_code=403, detail="You do not have access to this file.")
     try:
         content, ctype = await run_in_threadpool(storage.get_object, path)
     except Exception:
         raise HTTPException(status_code=404, detail="File not found.")
-    return Response(content=content, media_type=ctype, headers={"Cache-Control": "public, max-age=86400"})
+    return Response(content=content, media_type=ctype, headers={"Cache-Control": "private, max-age=86400"})
 
 
 # ----------------------- Admin -----------------------
