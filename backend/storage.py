@@ -48,6 +48,20 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
     return resp.json()
 
 
+def delete_object(path: str) -> bool:
+    """Delete an object from managed storage. Returns False when the object is already absent."""
+    key = init_storage()
+    resp = requests.delete(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    if resp.status_code == 503:
+        _reset_key()
+        key = init_storage()
+        resp = requests.delete(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    if resp.status_code in (200, 204, 404):
+        return resp.status_code != 404
+    resp.raise_for_status()
+    return True
+
+
 def get_object(path: str):
     key = init_storage()
     resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
