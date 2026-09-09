@@ -22,7 +22,7 @@
         "backgroundColor": "#0D9488"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.emergent.fixitservicematch.hg2d1j",
+      "package": "com.karan.fixit",
       "permissions": ["READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO"]
     },
     "web": {
