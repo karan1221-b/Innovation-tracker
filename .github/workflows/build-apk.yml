@@ -28,17 +28,24 @@ jobs:
       - name: Install Yarn
         run: npm install --global yarn@1.22.22
 
+
       - name: Install dependencies
         working-directory: frontend
         run: yarn install --non-interactive
 
       - name: Generate Android project
         working-directory: frontend
+        env:
+          EXPO_PUBLIC_BACKEND_URL: https://fixit-service-match.preview.emergentagent.com
         run: npx expo prebuild --platform android --non-interactive
 
       - name: Build debug APK
         working-directory: frontend/android
+        env:
+          EXPO_PUBLIC_BACKEND_URL: https://fixit-service-match.preview.emergentagent.com
         run: ./gradlew :app:assembleDebug
+        
+        
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
